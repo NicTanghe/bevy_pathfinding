@@ -17,7 +17,7 @@ exclude = [
 ]
 
 [dependencies]
-bevy = { version = "0.16.0", default-features = false, features = [
+bevy = { version = "0.17", default-features = false, features = [
     "bevy_asset",
     "bevy_gizmos",
     "bevy_pbr",
@@ -30,8 +30,7 @@ bytemuck = "1.21.0"
 image = "0.25.5"
 
 [dev-dependencies]
-bevy_rts_camera = "0.10.0"
-bevy = "0.16.0"
+bevy = "0.17"
 
 [features]
 debug = []

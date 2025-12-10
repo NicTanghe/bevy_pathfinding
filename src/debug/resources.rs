@@ -199,6 +199,8 @@ pub fn load_dbg_icon(mut images: ResMut<Assets<Image>>, mut dbg_icon: ResMut<Dbg
         sampler: ImageSampler::Descriptor(ImageSamplerDescriptor::default()),
         texture_view_descriptor: None,
         asset_usage: Default::default(),
+        copy_on_resize: false,
+        data_order: Default::default(),
     };
 
     // Add the image to Bevy's asset storage

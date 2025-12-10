@@ -6,7 +6,7 @@ use super::resources::*;
 
 use bevy::color::palettes::css::WHITE;
 use bevy::window::SystemCursorIcon;
-use bevy::winit::cursor::CursorIcon;
+use bevy::window::CursorIcon;
 use bevy::{prelude::*, window::PrimaryWindow};
 
 const CLR_TXT: Color = Color::srgb(0.8, 0.8, 0.8);
@@ -235,7 +235,7 @@ fn handle_hide_dbg_interaction(
 }
 
 fn toggle_dbg_visibility(
-    trigger: Trigger<ToggleDbgVisibilityEv>,
+    trigger: On<ToggleDbgVisibilityEv>,
     mut q_node: Query<&mut Node, With<VisibleNode>>,
     mut q_border: Query<&mut BorderRadius, With<BoidsInfoCtr>>,
     mut q_border_root: Query<&mut Node, (With<RootCtr>, Without<VisibleNode>)>,
@@ -266,7 +266,7 @@ fn toggle_dbg_visibility(
 }
 
 fn hide_options(
-    _trigger: Trigger<HideOptionsEv>,
+    _trigger: On<HideOptionsEv>,
     mut q_node: Query<&mut Node, Or<(With<DropdownOptions>, With<BoidsDropdownOptionsCtr>)>>,
 ) {
     for mut node in q_node.iter_mut() {
@@ -275,7 +275,7 @@ fn hide_options(
 }
 
 fn update_active_dropdown_option(
-    _trigger: Trigger<UpdateDropdownOptionEv>,
+    _trigger: On<UpdateDropdownOptionEv>,
     dbg: Res<DbgOptions>,
     mut q_txt: Query<(&mut Text, &OptionBox)>,
 ) {
@@ -319,7 +319,7 @@ fn handle_boids_dropdown_interaction(
 }
 
 fn toggle_boids_dropdown_visibility(
-    _trigger: Trigger<ToggleBoidsDropdown>,
+    _trigger: On<ToggleBoidsDropdown>,
     mut q_node: Query<&mut Node, With<BoidsDropdownOptionsCtr>>,
     mut q_border: Query<&mut BorderRadius, (With<BoidsInfoCtr>, Without<BoidsDropdownOptionsCtr>)>,
 ) {
@@ -389,7 +389,7 @@ fn handle_drag(
 }
 
 fn toggle_dropdown_visibility(
-    trigger: Trigger<ToggleModeEv>,
+    trigger: On<ToggleModeEv>,
     mut q_dropdown: Query<(&mut Node, &DropdownOptions)>,
 ) {
     let option = trigger.event().0;
@@ -940,15 +940,15 @@ fn handle_slider_arrow_interaction(
                 }
 
                 background_clr.0 = CLR_BTN_HOVER.into();
-                border_clr.0 = WHITE.into();
+                *border_clr = WHITE.into();
             }
             Interaction::Hovered => {
                 background_clr.0 = CLR_BTN_HOVER.into();
-                border_clr.0 = WHITE.into();
+                *border_clr = WHITE.into();
             }
             Interaction::None => {
                 background_clr.0 = CLR_BACKGROUND_1.into();
-                border_clr.0 = CLR_BORDER.into();
+                *border_clr = CLR_BORDER.into();
             }
         }
     }

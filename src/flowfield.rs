@@ -303,7 +303,7 @@ pub fn flowfield_group_stop_system(
 }
 
 fn initialize_flowfield(
-    trigger: Trigger<InitializeFlowFieldEv>,
+    trigger: On<InitializeFlowFieldEv>,
     mut cmds: Commands,
     grid: ResMut<Grid>,
     mut q_ff: Query<(Entity, &mut FlowField)>,
@@ -382,7 +382,7 @@ fn initialize_flowfield(
 // TODO: Causes huge performance dip
 // Updates integration fields and flowfields whenever a cost field is updated
 fn update_fields(
-    _trigger: Trigger<UpdateCostEv>,
+    _trigger: On<UpdateCostEv>,
     mut cmds: Commands,
     mut q_ff: Query<&mut FlowField>,
     grid: Res<Grid>,

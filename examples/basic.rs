@@ -86,7 +86,7 @@ fn spawn_units(
             Mesh3d(meshes.add(Cuboid::new(5.0, 5.0, 5.0))),
             MeshMaterial3d(materials.add(StandardMaterial::from_color(BLUE_500))),
             Transform::from_translation(pos),
-            Speed(25.0),
+            Speed(50.0),
             Boid::default(), // ADD THIS! -  Can also be set with custom parameters `Boid::new(50.0, 0.0, 0.0, 5.0)`
             Name::new("Unit"),
         )

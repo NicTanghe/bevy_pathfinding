@@ -11,7 +11,6 @@ use bevy_pathfinding::{
     grid::Grid,
     utils, BevyPathfindingPlugin,
 };
-use bevy_rts_camera::{Ground, RtsCamera, RtsCameraControls, RtsCameraPlugin};
 
 const CELL_SIZE: f32 = 10.0; // size of each cell in the grid
 const BUCKETS: f32 = 150.0; // size of each bucket (spatial partitioning) in the grid
@@ -31,7 +30,6 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             BevyPathfindingPlugin, // ADD THIS!
-            RtsCameraPlugin,
         ))
         .add_systems(Startup, (camera, setup, spawn_units))
         .add_systems(Update, (set_unit_destination, move_unit))
@@ -46,24 +44,6 @@ fn camera(mut cmds: Commands) {
         Camera3d::default(),
         GameCamera, // ADD THIS!
         Transform::from_translation(Vec3::new(0.0, 2000.0, 1500.0)).looking_at(Vec3::ZERO, Vec3::Y),
-        RtsCamera {
-            bounds: Aabb2d::new(Vec2::ZERO, Vec2::new(MAP_WIDTH / 2.0, MAP_DEPTH / 2.0)),
-            min_angle: 60.0f32.to_radians(),
-            // height_max: 300.0,
-            height_max: 1000.0,
-            height_min: 30.0,
-            ..default()
-        },
-        RtsCameraControls {
-            edge_pan_width: 0.01,
-            key_left: KeyCode::KeyA,
-            key_right: KeyCode::KeyD,
-            key_up: KeyCode::KeyW,
-            key_down: KeyCode::KeyS,
-            pan_speed: 165.0,
-            zoom_sensitivity: 0.2,
-            ..default()
-        },
     ));
 }
 
@@ -77,7 +57,6 @@ fn setup(
         Mesh3d(meshes.add(Plane3d::default().mesh().size(MAP_WIDTH, MAP_DEPTH))),
         MeshMaterial3d(materials.add(StandardMaterial::from_color(GREEN_600))),
         MapBase, // ADD THIS!
-        Ground,
         Name::new("Map Base"),
     );
 

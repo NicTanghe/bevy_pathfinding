@@ -14,6 +14,10 @@ use bevy::{
         render_resource::*, renderer::RenderDevice, view::ExtractedView, *,
     },
 };
+// use bevy::render::render_resource::MeshVertexBufferLayoutRef;
+// use bevy::render::render_resource::MeshVertexBufferLayout;
+use bevy::mesh::MeshVertexBufferLayoutRef;
+use bevy::mesh::VertexBufferLayout;
 use bytemuck::{Pod, Zeroable};
 use extract_resource::ExtractResource;
 use image::ImageFormat;
@@ -74,7 +78,7 @@ impl ExtractComponent for InstanceMaterialData {
     type QueryFilter = ();
     type Out = Self;
 
-    fn extract_component(item: QueryItem<'_, Self::QueryData>) -> Option<Self> {
+    fn extract_component(item: QueryItem<'_, '_, Self::QueryData>) -> Option<Self> {
         Some(InstanceMaterialData(item.0.clone()))
     }
 }
@@ -95,8 +99,8 @@ impl Plugin for CustomShaderPlugin {
             .add_systems(
                 Render,
                 (
-                    queue_custom.in_set(RenderSet::QueueMeshes),
-                    prepare_instance_buffers.in_set(RenderSet::PrepareResources),
+                    queue_custom.in_set(RenderSystems::QueueMeshes),
+                    prepare_instance_buffers.in_set(RenderSystems::PrepareResources),
                 ),
             );
 
@@ -155,6 +159,8 @@ fn load_textures(
         sampler: ImageSampler::Descriptor(ImageSamplerDescriptor::default()),
         texture_view_descriptor: None,
         asset_usage: Default::default(),
+        copy_on_resize: false,
+        data_order: Default::default(),
     };
 
     // ARROW IMG
@@ -182,6 +188,8 @@ fn load_textures(
         sampler: ImageSampler::Descriptor(ImageSamplerDescriptor::default()),
         texture_view_descriptor: None,
         asset_usage: Default::default(),
+        copy_on_resize: false,
+        data_order: Default::default(),
     };
 
     // 'X' IMG
@@ -209,6 +217,8 @@ fn load_textures(
         sampler: ImageSampler::Descriptor(ImageSamplerDescriptor::default()),
         texture_view_descriptor: None,
         asset_usage: Default::default(),
+        copy_on_resize: false,
+        data_order: Default::default(),
     };
 
     // DESTINATION IMG
@@ -236,6 +246,8 @@ fn load_textures(
         sampler: ImageSampler::Descriptor(ImageSamplerDescriptor::default()),
         texture_view_descriptor: None,
         asset_usage: Default::default(),
+        copy_on_resize: false,
+        data_order: Default::default(),
     };
 
     // Store the atlas in the first slot of the Digits array
@@ -266,6 +278,70 @@ fn queue_custom(
 ) {
     let draw_custom = transparent_3d_draw_functions.read().id::<DrawCustom>();
 
+    // Check if textures are loaded
+    let (Some(digit_gpu), Some(arrow_gpu), Some(x_gpu), Some(dest_gpu)) = (
+        gpu_images.get(&assets.digit_atlas),
+        gpu_images.get(&assets.arrow_img),
+        gpu_images.get(&assets.x_img),
+        gpu_images.get(&assets.destination_img),
+    ) else {
+        return;
+    };
+
+    let bind_group = render_device.create_bind_group(
+        Some("digit+arrow bind group"),
+        &custom_pipeline.texture_layout,
+        &[
+            // digit atlas texture
+            BindGroupEntry {
+                binding: 0,
+                resource: BindingResource::TextureView(&digit_gpu.texture_view),
+            },
+            // digit atlas sampler
+            BindGroupEntry {
+                binding: 1,
+                resource: BindingResource::Sampler(&digit_gpu.sampler),
+            },
+            // arrow texture
+            BindGroupEntry {
+                binding: 2,
+                resource: BindingResource::TextureView(&arrow_gpu.texture_view),
+            },
+            // arrow sampler
+            BindGroupEntry {
+                binding: 3,
+                resource: BindingResource::Sampler(&arrow_gpu.sampler),
+            },
+            // 'x' texture
+            BindGroupEntry {
+                binding: 4,
+                resource: BindingResource::TextureView(&x_gpu.texture_view),
+            },
+            // 'x' sampler
+            BindGroupEntry {
+                binding: 5,
+                resource: BindingResource::Sampler(&x_gpu.sampler),
+            },
+            // destination texture
+            BindGroupEntry {
+                binding: 6,
+                resource: BindingResource::TextureView(&dest_gpu.texture_view),
+            },
+            // destination sampler
+            BindGroupEntry {
+                binding: 7,
+                resource: BindingResource::Sampler(&dest_gpu.sampler),
+            },
+        ],
+    );
+
+    // Insert the bind group for all relevant entities
+    for entity in &q_entities {
+        cmds.entity(entity).insert(DigitBindGroup {
+            bind_group: bind_group.clone(),
+        });
+    }
+
     for (view, msaa) in &mut views {
         let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples());
 
@@ -284,6 +360,7 @@ fn queue_custom(
             let Some(mesh) = meshes.get(mesh_instance.mesh_asset_id) else {
                 continue;
             };
+            let indexed = matches!(mesh.buffer_info, RenderMeshBufferInfo::Indexed { .. });
             let key =
                 view_key | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology());
             let pipeline = pipelines
@@ -296,68 +373,7 @@ fn queue_custom(
                 distance: rangefinder.distance_translation(&mesh_instance.translation),
                 batch_range: 0..1,
                 extra_index: PhaseItemExtraIndex::None,
-                indexed: false,
-            });
-        }
-    }
-
-    if let (Some(digit_gpu), Some(arrow_gpu), Some(x_gpu), Some(dest_gpu)) = (
-        gpu_images.get(&assets.digit_atlas),
-        gpu_images.get(&assets.arrow_img),
-        gpu_images.get(&assets.x_img),
-        gpu_images.get(&assets.destination_img),
-    ) {
-        let bind_group = render_device.create_bind_group(
-            Some("digit+arrow bind group"),
-            &custom_pipeline.texture_layout,
-            &[
-                // digit atlas texture
-                BindGroupEntry {
-                    binding: 0,
-                    resource: BindingResource::TextureView(&digit_gpu.texture_view),
-                },
-                // digit atlas sampler
-                BindGroupEntry {
-                    binding: 1,
-                    resource: BindingResource::Sampler(&digit_gpu.sampler),
-                },
-                // arrow texture
-                BindGroupEntry {
-                    binding: 2,
-                    resource: BindingResource::TextureView(&arrow_gpu.texture_view),
-                },
-                // arrow sampler
-                BindGroupEntry {
-                    binding: 3,
-                    resource: BindingResource::Sampler(&arrow_gpu.sampler),
-                },
-                // 'x' texture
-                BindGroupEntry {
-                    binding: 4,
-                    resource: BindingResource::TextureView(&x_gpu.texture_view),
-                },
-                // 'x' sampler
-                BindGroupEntry {
-                    binding: 5,
-                    resource: BindingResource::Sampler(&x_gpu.sampler),
-                },
-                // destination texture
-                BindGroupEntry {
-                    binding: 6,
-                    resource: BindingResource::TextureView(&dest_gpu.texture_view),
-                },
-                // destination sampler
-                BindGroupEntry {
-                    binding: 7,
-                    resource: BindingResource::Sampler(&dest_gpu.sampler),
-                },
-            ],
-        );
-
-        // Insert the bind group for all relevant entities
-        for entity in &q_entities {
-            cmds.entity(entity).insert(DigitBindGroup {
-                bind_group: bind_group.clone(),
+                indexed,
             });
         }
     }
@@ -504,7 +520,6 @@ impl SpecializedMeshPipeline for CustomPipeline {
         layout: &MeshVertexBufferLayoutRef,
     ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
         let mut descriptor = self.mesh_pipeline.specialize(key, layout)?;
-
         descriptor.layout.push(self.texture_layout.clone());
         descriptor.vertex.shader = self.shader.clone();
         descriptor.vertex.buffers.push(VertexBufferLayout {
@@ -547,8 +562,9 @@ impl SpecializedMeshPipeline for CustomPipeline {
 type DrawCustom = (
     SetItemPipeline,
     SetMeshViewBindGroup<0>,
-    SetMeshBindGroup<1>,
-    SetDigitTextureBindGroup<2>,
+    SetMeshViewBindingArrayBindGroup<1>,
+    SetMeshBindGroup<2>,
+    SetDigitTextureBindGroup<3>,
     DrawMeshInstanced,
 );
 
